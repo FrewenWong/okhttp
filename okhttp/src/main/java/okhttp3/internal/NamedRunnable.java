@@ -26,6 +26,7 @@ public abstract class NamedRunnable implements Runnable {
   }
 
   @Override public final void run() {
+    // 主要看这个方法的实现，缓存oldName 然后设置当前线程的名字，带耗时任务完成之后，设置回去。
     String oldName = Thread.currentThread().getName();
     Thread.currentThread().setName(name);
     try {

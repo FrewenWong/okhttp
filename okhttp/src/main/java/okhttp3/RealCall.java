@@ -39,7 +39,11 @@ final class RealCall implements Call {
 
   /** The application's original request unadulterated by redirects or auth headers. */
   Request originalRequest;
-
+  /**
+   * 新建一个请求对象
+   * @param client
+   * @param originalRequest
+   */
   protected RealCall(OkHttpClient client, Request originalRequest) {
     this.client = client;
     this.originalRequest = originalRequest;
@@ -49,13 +53,19 @@ final class RealCall implements Call {
   @Override public Request request() {
     return originalRequest;
   }
-
+  /**
+   * RealCall的同步调用逻辑
+   */
   @Override public Response execute() throws IOException {
+    // 加入对象锁，避免多次执行
     synchronized (this) {
       if (executed) throw new IllegalStateException("Already Executed");
       executed = true;
     }
+    // 我们可以看到调用了调度分发器，执行executed
     try {
+      // client的dispatcher函数获取的是实例化时候的调取器
+      // 调用executed方法
       client.dispatcher().executed(this);
       Response result = getResponseWithInterceptorChain();
       if (result == null) throw new IOException("Canceled");
@@ -69,12 +79,16 @@ final class RealCall implements Call {
     if (executed) throw new IllegalStateException("Already Executed");
     this.retryAndFollowUpInterceptor.setForWebSocket(true);
   }
-
+  /**
+   * RealCall的异步调用逻辑
+   */
   @Override public void enqueue(Callback responseCallback) {
     synchronized (this) {
       if (executed) throw new IllegalStateException("Already Executed");
       executed = true;
     }
+    // client的dispatcher函数获取的是实例化时候的调取器
+    // 调用enqueue方法，我们看一下这个方法的实现
     client.dispatcher().enqueue(new AsyncCall(responseCallback));
   }
 
@@ -93,7 +107,10 @@ final class RealCall implements Call {
   StreamAllocation streamAllocation() {
     return retryAndFollowUpInterceptor.streamAllocation();
   }
-
+  /**
+   * 我们看一下AsyncCall的实现：AsyncCall是RealCall里面的一个内部类
+   * 实现了NamedRunnable。这个其实就是可以为单独某次的请求设置线程的名称
+   */
   final class AsyncCall extends NamedRunnable {
     private final Callback responseCallback;
 
@@ -113,11 +130,17 @@ final class RealCall implements Call {
     RealCall get() {
       return RealCall.this;
     }
-
+    /**
+     * 通过看execute的方法。这里就是异步任务执行的的根本方法
+     * 
+     */
     @Override protected void execute() {
       boolean signalledCallback = false;
       try {
+        // 这个地方通过责任链模式，层层进行处理，最后将response返回
+        // 那么很简单了，我们要看这里面怎么去请求Response
         Response response = getResponseWithInterceptorChain();
+        // 即时前面所有的拦截器返回了Response。但是RealCall本身也有一个拦截器
         if (retryAndFollowUpInterceptor.isCanceled()) {
           signalledCallback = true;
           responseCallback.onFailure(RealCall.this, new IOException("Canceled"));

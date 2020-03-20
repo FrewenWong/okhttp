@@ -59,6 +59,16 @@ public final class Dispatcher {
   public Dispatcher() {
   }
 
+  /**
+   * 进行实例化ExecutorService的线程池的对象。
+   * @return
+   * int corePoolSize,   核心线程为0
+   * int maximumPoolSize 最大线程数是无限大
+   * long keepAliveTime,
+   * TimeUnit unit, 
+   * BlockingQueue<Runnable> workQueue,
+   * ThreadFactory threadFactory  线程工厂，创建OkHttp Dispatcher
+   */
   public synchronized ExecutorService executorService() {
     if (executorService == null) {
       executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS,
@@ -123,9 +133,19 @@ public final class Dispatcher {
     this.idleCallback = idleCallback;
   }
 
+  /**
+   * synchronized关键字，保证方法执行完毕
+   * @param call
+   */
   synchronized void enqueue(AsyncCall call) {
+    // 最大请求数量的判断。这个地方默认规定了OKHttp最大的同时请求不能超过并发数(64,可配置调度器调整)，
+    // okhttp会使用共享主机即 地址相同的会共享socket 最大请求域名是5个,同一个host最多允许5条线程通知执行请求
+    // 如果不满足条件，则先把请求加入准备队列中
     if (runningAsyncCalls.size() < maxRequests && runningCallsForHost(call) < maxRequestsPerHost) {
+      // 将call加入到运行的异步Call队列
       runningAsyncCalls.add(call);
+      // 获取线程池，线程池执行AsyncCall
+      // 我们看一下线程池的设计
       executorService().execute(call);
     } else {
       readyAsyncCalls.add(call);

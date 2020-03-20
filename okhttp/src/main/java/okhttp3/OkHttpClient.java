@@ -113,6 +113,8 @@ import okhttp3.internal.tls.OkHostnameVerifier;
  *
  * <p>OkHttp also uses daemon threads for HTTP/2 connections. These will exit automatically if they
  * remain idle.
+ * 
+ * OKHttpClient的类实现了Call.Factory接口。可以用来实例化一个新的请求
  */
 public class OkHttpClient implements Cloneable, Call.Factory {
   private static final List<Protocol> DEFAULT_PROTOCOLS = Util.immutableList(
@@ -199,21 +201,35 @@ public class OkHttpClient implements Cloneable, Call.Factory {
   final int readTimeout;
   final int writeTimeout;
 
+  /**
+   * 构造函数，传入默认的建造者对象
+   */
   public OkHttpClient() {
     this(new Builder());
   }
 
   private OkHttpClient(Builder builder) {
+    //调度器
     this.dispatcher = builder.dispatcher;
+    //代理对象
     this.proxy = builder.proxy;
+    //协议
     this.protocols = builder.protocols;
+    //传输层版本和连接协议
     this.connectionSpecs = builder.connectionSpecs;
+    //拦截器 我们可以自定义设置
     this.interceptors = Util.immutableList(builder.interceptors);
+    //网络拦截器
     this.networkInterceptors = Util.immutableList(builder.networkInterceptors);
+    //代理选择器
     this.proxySelector = builder.proxySelector;
+    //cookie
     this.cookieJar = builder.cookieJar;
+    //cache 缓存
     this.cache = builder.cache;
+    //内部缓存
     this.internalCache = builder.internalCache;
+    //socket 工厂
     this.socketFactory = builder.socketFactory;
 
     boolean isTLS = false;
@@ -222,26 +238,39 @@ public class OkHttpClient implements Cloneable, Call.Factory {
     }
 
     if (builder.sslSocketFactory != null || !isTLS) {
-      this.sslSocketFactory = builder.sslSocketFactory;
+      //安全套层socket工厂 用于https
+      this.sslSocketFactory = builder.sslSocketFactory; 
+      //验证确认响应书，适用HTTPS 请求连接的主机名
       this.certificateChainCleaner = builder.certificateChainCleaner;
     } else {
       X509TrustManager trustManager = systemDefaultTrustManager();
       this.sslSocketFactory = systemDefaultSslSocketFactory(trustManager);
       this.certificateChainCleaner = CertificateChainCleaner.get(trustManager);
     }
-
+    //主机名字确认
     this.hostnameVerifier = builder.hostnameVerifier;
+    //证书链
     this.certificatePinner = builder.certificatePinner.withCertificateChainCleaner(
         certificateChainCleaner);
+    //代理身份验证
     this.proxyAuthenticator = builder.proxyAuthenticator;
+    //本地省份验证
     this.authenticator = builder.authenticator;
+    //链接池 复用连接
     this.connectionPool = builder.connectionPool;
+    //域名
     this.dns = builder.dns;
+    //安全套接层重定向
     this.followSslRedirects = builder.followSslRedirects;
+    //本地重定向
     this.followRedirects = builder.followRedirects;
+    //重试连接失败
     this.retryOnConnectionFailure = builder.retryOnConnectionFailure;
+    //连接超时
     this.connectTimeout = builder.connectTimeout;
+    //读取超时
     this.readTimeout = builder.readTimeout;
+    //写入超时
     this.writeTimeout = builder.writeTimeout;
   }
 
@@ -384,6 +413,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
    * Prepares the {@code request} to be executed at some point in the future.
    */
   @Override public Call newCall(Request request) {
+    // 实例化RealCall对象，传入request，准备进行请求
     return new RealCall(this, request);
   }
 
