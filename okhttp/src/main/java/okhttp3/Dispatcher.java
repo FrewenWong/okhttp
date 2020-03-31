@@ -57,8 +57,14 @@ public final class Dispatcher {
   }
 
   public Dispatcher() {
+
   }
 
+  /**
+   * OKHttp的调用逻辑的线程池
+   * 线程池的参数：
+   * 
+   */
   public synchronized ExecutorService executorService() {
     if (executorService == null) {
       executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS,
@@ -123,11 +129,19 @@ public final class Dispatcher {
     this.idleCallback = idleCallback;
   }
 
+  /**
+   * 同步方法调用OkHttp的异步网络请求
+   */
   synchronized void enqueue(AsyncCall call) {
+    //这里判断队列是否已满，队列不满怎将请求放到线程池中执行，否则加入到队列中
+    // 这里我们需要知道OKHttp的最大的请求数是64个。单个域名的最大请求书是5个。
     if (runningAsyncCalls.size() < maxRequests && runningCallsForHost(call) < maxRequestsPerHost) {
+      // 加入到运行中的Call中
       runningAsyncCalls.add(call);
+      // 进行调度服务器来执行这个Call
       executorService().execute(call);
     } else {
+      // 如果队列已满，则添加到等待队列中
       readyAsyncCalls.add(call);
     }
   }

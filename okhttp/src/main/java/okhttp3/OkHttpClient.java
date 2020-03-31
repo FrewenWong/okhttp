@@ -213,30 +213,41 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
   final int writeTimeout;
   final int pingInterval;
 
+  /**
+   * OKHttp的构造函数
+   * 调用了创建者对象来进行对象的实例化
+   */
   public OkHttpClient() {
     this(new Builder());
   }
 
   OkHttpClient(Builder builder) {
+    // 分发器
     this.dispatcher = builder.dispatcher;
     this.proxy = builder.proxy;
     this.protocols = builder.protocols;
+    // 传输层版本和连接协议
     this.connectionSpecs = builder.connectionSpecs;
+    // 拦截器
     this.interceptors = Util.immutableList(builder.interceptors);
+    // 网络拦截器
     this.networkInterceptors = Util.immutableList(builder.networkInterceptors);
     this.proxySelector = builder.proxySelector;
     this.cookieJar = builder.cookieJar;
     this.cache = builder.cache;
+    // 内部缓存
     this.internalCache = builder.internalCache;
+    // 套接字工厂
     this.socketFactory = builder.socketFactory;
 
     boolean isTLS = false;
     for (ConnectionSpec spec : connectionSpecs) {
       isTLS = isTLS || spec.isTls();
     }
-
+    // 安全套接层socket 工厂，用于HTTPS
     if (builder.sslSocketFactory != null || !isTLS) {
       this.sslSocketFactory = builder.sslSocketFactory;
+      // 验证确认响应证书 适用 HTTPS 请求连接的主机名。
       this.certificateChainCleaner = builder.certificateChainCleaner;
     } else {
       X509TrustManager trustManager = systemDefaultTrustManager();
@@ -245,15 +256,23 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
     }
 
     this.hostnameVerifier = builder.hostnameVerifier;
+    // 证书锁定，使用CertificatePinner来约束哪些认证机构被信任。
     this.certificatePinner = builder.certificatePinner.withCertificateChainCleaner(
         certificateChainCleaner);
+    // 代理身份验证
     this.proxyAuthenticator = builder.proxyAuthenticator;
+    // 身份验证
     this.authenticator = builder.authenticator;
+    // 连接池
     this.connectionPool = builder.connectionPool;
     this.dns = builder.dns;
+    // 安全套接层重定向
     this.followSslRedirects = builder.followSslRedirects;
+    // 本地重定向
     this.followRedirects = builder.followRedirects;
+    // 重试连接失败
     this.retryOnConnectionFailure = builder.retryOnConnectionFailure;
+    // 连接超时、读取超时、写入超时
     this.connectTimeout = builder.connectTimeout;
     this.readTimeout = builder.readTimeout;
     this.writeTimeout = builder.writeTimeout;
@@ -369,7 +388,9 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
   public boolean retryOnConnectionFailure() {
     return retryOnConnectionFailure;
   }
-
+  /**
+   * 这个是OKHttp的调度器
+   */
   public Dispatcher dispatcher() {
     return dispatcher;
   }
@@ -402,6 +423,7 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
 
   /**
    * Prepares the {@code request} to be executed at some point in the future.
+   * 传入request.创建一个newCall。来进行网络请求
    */
   @Override public Call newCall(Request request) {
     return new RealCall(this, request, false /* for web socket */);
@@ -447,7 +469,9 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
     int readTimeout;
     int writeTimeout;
     int pingInterval;
-
+    /**
+     * 创建者对象里面默认配置的参数
+     */
     public Builder() {
       dispatcher = new Dispatcher();
       protocols = DEFAULT_PROTOCOLS;
@@ -469,7 +493,7 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
       writeTimeout = 10_000;
       pingInterval = 0;
     }
-
+    // 这里传入自己配置的构建参数
     Builder(OkHttpClient okHttpClient) {
       this.dispatcher = okHttpClient.dispatcher;
       this.proxy = okHttpClient.proxy;

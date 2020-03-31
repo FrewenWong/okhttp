@@ -23,11 +23,16 @@ import okhttp3.internal.http.HttpMethod;
 /**
  * An HTTP request. Instances of this class are immutable if their {@link #body} is null or itself
  * immutable.
+ * OKHttp请求对象
  */
 public final class Request {
-  final HttpUrl url;
+  // url
+  final HttpUrl url;\
+  // 请求方法:"GET","POST"
   final String method;
+  // 请求头部
   final Headers headers;
+  // 请求体
   final RequestBody body;
   final Object tag;
 

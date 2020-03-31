@@ -40,7 +40,11 @@ final class RealCall implements Call {
 
   // Guarded by this.
   private boolean executed;
-
+  /**
+   * RealCall的构造函数。
+   * client 传入的Client对象。
+   * originalRequest  传入的初始的Request对象
+   */
   RealCall(OkHttpClient client, Request originalRequest, boolean forWebSocket) {
     this.client = client;
     this.originalRequest = originalRequest;
@@ -73,12 +77,17 @@ final class RealCall implements Call {
     retryAndFollowUpInterceptor.setCallStackTrace(callStackTrace);
   }
 
+  /**
+   * OKHttp的异步请求
+   */
   @Override public void enqueue(Callback responseCallback) {
     synchronized (this) {
       if (executed) throw new IllegalStateException("Already Executed");
       executed = true;
     }
+   
     captureCallStackTrace();
+     // OkHttp通过调度器Dispatcher执行请求。实例化了一个异步请求的Call
     client.dispatcher().enqueue(new AsyncCall(responseCallback));
   }
 
