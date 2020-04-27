@@ -17,6 +17,7 @@ package okhttp3.internal;
 
 /**
  * Runnable implementation which always sets its thread name.
+ * 继承自Runnable的带Name的.名称是当前线程的名称。run方法被重写为execute
  */
 public abstract class NamedRunnable implements Runnable {
   protected final String name;

@@ -111,7 +111,9 @@ final class RealCall implements Call {
   StreamAllocation streamAllocation() {
     return retryAndFollowUpInterceptor.streamAllocation();
   }
-
+  /**
+   * 异步调用的Call
+   */
   final class AsyncCall extends NamedRunnable {
     private final Callback responseCallback;
 
@@ -132,10 +134,13 @@ final class RealCall implements Call {
       return RealCall.this;
     }
 
-    @Override protected void execute() {
+    @Override 
+    protected void execute() {
       boolean signalledCallback = false;
       try {
+        // getResponseWithInterceptorChain通过各种拦截器的责任链模式。来获取最终的response
         Response response = getResponseWithInterceptorChain();
+        // 判断retryAndFollowUpInterceptor的连接器是否已经取消
         if (retryAndFollowUpInterceptor.isCanceled()) {
           signalledCallback = true;
           responseCallback.onFailure(RealCall.this, new IOException("Canceled"));
@@ -144,6 +149,7 @@ final class RealCall implements Call {
           responseCallback.onResponse(RealCall.this, response);
         }
       } catch (IOException e) {
+        // IO操作的异常处理
         if (signalledCallback) {
           // Do not signal the callback twice!
           Platform.get().log(INFO, "Callback failure for " + toLoggableString(), e);
@@ -151,6 +157,7 @@ final class RealCall implements Call {
           responseCallback.onFailure(RealCall.this, e);
         }
       } finally {
+        // 最后执行调度分发器的finished
         client.dispatcher().finished(this);
       }
     }
@@ -172,6 +179,9 @@ final class RealCall implements Call {
 
   Response getResponseWithInterceptorChain() throws IOException {
     // Build a full stack of interceptors.
+    // 这个方法构建了一个拦截器列表，
+    // 包括我们在构建okhttpclient时添的interceptor和networkInterceptor，
+    // 反正就是各种拦截器
     List<Interceptor> interceptors = new ArrayList<>();
     interceptors.addAll(client.interceptors());
     interceptors.add(retryAndFollowUpInterceptor);
@@ -181,10 +191,14 @@ final class RealCall implements Call {
     if (!forWebSocket) {
       interceptors.addAll(client.networkInterceptors());
     }
+    // 
     interceptors.add(new CallServerInterceptor(forWebSocket));
-
+    //接着又生成了一个RealInterceptorChain，调用它的proceed方法返回最终的Response。
+    // 这里注意两个参数：连接器列表、originalRequest
+    // originalRequest 这个就是我们最开始的时候构建的Request
     Interceptor.Chain chain = new RealInterceptorChain(
         interceptors, null, null, null, 0, originalRequest);
+    // 那毫无疑问，最后这个proceed就是非常重要的方法 
     return chain.proceed(originalRequest);
   }
 }

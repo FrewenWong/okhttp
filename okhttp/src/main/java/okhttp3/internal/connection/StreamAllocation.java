@@ -89,14 +89,21 @@ public final class StreamAllocation {
     this.routeSelector = new RouteSelector(address, routeDatabase());
     this.callStackTrace = callStackTrace;
   }
-
+  /**
+   * 
+   */
   public HttpCodec newStream(OkHttpClient client, boolean doExtensiveHealthChecks) {
+    // 连接超时时间
     int connectTimeout = client.connectTimeoutMillis();
+    // 读取超时时间
     int readTimeout = client.readTimeoutMillis();
+    // 写入超时时间
     int writeTimeout = client.writeTimeoutMillis();
+    // 是否重试的标志变量
     boolean connectionRetryEnabled = client.retryOnConnectionFailure();
 
     try {
+      // 创建连接
       RealConnection resultConnection = findHealthyConnection(connectTimeout, readTimeout,
           writeTimeout, connectionRetryEnabled, doExtensiveHealthChecks);
       HttpCodec resultCodec = resultConnection.newCodec(client, this);

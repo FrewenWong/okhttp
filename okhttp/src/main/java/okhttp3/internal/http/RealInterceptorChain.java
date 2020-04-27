@@ -36,7 +36,12 @@ public final class RealInterceptorChain implements Interceptor.Chain {
   private final int index;
   private final Request request;
   private int calls;
-
+  /**
+   * RealInterceptorChain构造函数
+   * 1、拦截器列表
+   * 
+   * 6、构建的请求对象
+   */
   public RealInterceptorChain(List<Interceptor> interceptors, StreamAllocation streamAllocation,
       HttpCodec httpCodec, Connection connection, int index, Request request) {
     this.interceptors = interceptors;
@@ -66,9 +71,13 @@ public final class RealInterceptorChain implements Interceptor.Chain {
   @Override public Response proceed(Request request) throws IOException {
     return proceed(request, streamAllocation, httpCodec, connection);
   }
-
+  /**
+   * 重点看看这个方法：
+   * 
+   */
   public Response proceed(Request request, StreamAllocation streamAllocation, HttpCodec httpCodec,
       Connection connection) throws IOException {
+    // 这个Index标记责任链的处理所以值    
     if (index >= interceptors.size()) throw new AssertionError();
 
     calls++;
@@ -86,9 +95,12 @@ public final class RealInterceptorChain implements Interceptor.Chain {
     }
 
     // Call the next interceptor in the chain.
+    // 然后重新构建一个RealInterceptorChain。交给当前索引处的拦截器进行拦截处理
     RealInterceptorChain next = new RealInterceptorChain(
         interceptors, streamAllocation, httpCodec, connection, index + 1, request);
     Interceptor interceptor = interceptors.get(index);
+    // 我们看到这个方法是很重要的。他传入的是一个Next的RealInterceptorChain。
+    // 这个也就是为什么我们自己在构建自定义拦截器的时候最后执行的方法是chain.proceed
     Response response = interceptor.intercept(next);
 
     // Confirm that the next interceptor made its required call to chain.proceed().
@@ -104,8 +116,11 @@ public final class RealInterceptorChain implements Interceptor.Chain {
 
     return response;
   }
-
+  /**
+   * 判断是否是同一个网络请求连接
+   */
   private boolean sameConnection(HttpUrl url) {
+    // 判断host和端口号
     return url.host().equals(connection.route().address().url().host())
         && url.port() == connection.route().address().url().port();
   }
