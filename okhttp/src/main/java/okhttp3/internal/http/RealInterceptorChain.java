@@ -39,7 +39,7 @@ public final class RealInterceptorChain implements Interceptor.Chain {
   /**
    * RealInterceptorChain构造函数
    * 1、拦截器列表
-   * 
+   * 2、
    * 6、构建的请求对象
    */
   public RealInterceptorChain(List<Interceptor> interceptors, StreamAllocation streamAllocation,
@@ -77,7 +77,7 @@ public final class RealInterceptorChain implements Interceptor.Chain {
    */
   public Response proceed(Request request, StreamAllocation streamAllocation, HttpCodec httpCodec,
       Connection connection) throws IOException {
-    // 这个Index标记责任链的处理所以值    
+    // 这个Index标记责任链的处理所以值。如果Index的值大约等于interceptors的size    
     if (index >= interceptors.size()) throw new AssertionError();
 
     calls++;

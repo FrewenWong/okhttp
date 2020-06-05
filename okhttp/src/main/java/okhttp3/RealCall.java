@@ -180,7 +180,7 @@ final class RealCall implements Call {
   Response getResponseWithInterceptorChain() throws IOException {
     // Build a full stack of interceptors.
     // 这个方法构建了一个拦截器列表，
-    // 包括我们在构建okhttpclient时添的interceptor和networkInterceptor，
+    // 包括我们在构建okhttpclient时添的LoggingInterceptor和networkInterceptor，
     // 反正就是各种拦截器
     List<Interceptor> interceptors = new ArrayList<>();
     interceptors.addAll(client.interceptors());

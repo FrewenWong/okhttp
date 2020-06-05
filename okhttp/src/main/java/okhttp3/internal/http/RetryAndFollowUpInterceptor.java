@@ -100,7 +100,11 @@ public final class RetryAndFollowUpInterceptor implements Interceptor {
     return streamAllocation;
   }
 
+  /**
+   * 拦截器的拦截逻辑的实现
+   */
   @Override public Response intercept(Chain chain) throws IOException {
+    // 获取责任链中的request
     Request request = chain.request();
 
     streamAllocation = new StreamAllocation(

@@ -39,12 +39,14 @@ public final class LoggingInterceptors {
 
   private static class LoggingInterceptor implements Interceptor {
     @Override public Response intercept(Chain chain) throws IOException {
+      // 记录程序执行的事件
       long t1 = System.nanoTime();
       Request request = chain.request();
       logger.info(String.format("Sending request %s on %s%n%s",
           request.url(), chain.connection(), request.headers()));
+      // 获取Reponse的执行时间    
       Response response = chain.proceed(request);
-
+      // 记录程序执行结束的事件
       long t2 = System.nanoTime();
       logger.info(String.format("Received response for %s in %.1fms%n%s",
           request.url(), (t2 - t1) / 1e6d, response.headers()));
