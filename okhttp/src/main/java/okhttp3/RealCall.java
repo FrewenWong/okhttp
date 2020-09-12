@@ -81,6 +81,8 @@ final class RealCall implements Call {
   }
   /**
    * RealCall的异步调用逻辑
+   * 我们可以注意看这个同步锁的加载，
+   * 保证我们的一个RealCall只调度发送一次请求
    */
   @Override public void enqueue(Callback responseCallback) {
     synchronized (this) {
@@ -156,6 +158,7 @@ final class RealCall implements Call {
           responseCallback.onFailure(RealCall.this, e);
         }
       } finally {
+        /// 重点是这个方法，当所有的网络请求执行完毕之后，都是执行client.dispatcher().finished(this)
         client.dispatcher().finished(this);
       }
     }
@@ -174,22 +177,39 @@ final class RealCall implements Call {
     return originalRequest.url().resolve("/...");
   }
 
+  /**
+   * 这个方法是非常重要的，
+   * 这个就是通过责任链的模式来进行我们的Response的请求
+   * 
+   * TODO 这个我们需要看一下，我们这些拦截器是随便插入吗？？还是有插入顺序的
+   * @return
+   * @throws IOException
+   */
   private Response getResponseWithInterceptorChain() throws IOException {
     // Build a full stack of interceptors.
     List<Interceptor> interceptors = new ArrayList<>();
+    // 首先添加的是client里面我们
     interceptors.addAll(client.interceptors());
+    // 添加retryAndFollowUpInterceptor
     interceptors.add(retryAndFollowUpInterceptor);
+    // 添加BridgeInterceptor
     interceptors.add(new BridgeInterceptor(client.cookieJar()));
+    // 添加缓存的CacheInterceptor
     interceptors.add(new CacheInterceptor(client.internalCache()));
+    // 添加连接的ConnectInterceptor
     interceptors.add(new ConnectInterceptor(client));
+
+    /// 添加网络拦截器
     if (!retryAndFollowUpInterceptor.isForWebSocket()) {
       interceptors.addAll(client.networkInterceptors());
     }
     interceptors.add(new CallServerInterceptor(
         retryAndFollowUpInterceptor.isForWebSocket()));
 
+    // 实例化RealInterceptorChain连接器责任链里面的链式对象
     Interceptor.Chain chain = new RealInterceptorChain(
         interceptors, null, null, null, 0, originalRequest);
+    // 调用链式对象的proceed
     return chain.proceed(originalRequest);
   }
 }

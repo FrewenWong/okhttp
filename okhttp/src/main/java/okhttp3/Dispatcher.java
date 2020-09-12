@@ -45,7 +45,9 @@ public final class Dispatcher {
 
   /** Ready async calls in the order they'll be run. */
   private final Deque<AsyncCall> readyAsyncCalls = new ArrayDeque<>();
-
+  /**
+   *
+   */
   /** Running asynchronous calls. Includes canceled calls that haven't finished yet. */
   private final Deque<AsyncCall> runningAsyncCalls = new ArrayDeque<>();
 
@@ -66,7 +68,10 @@ public final class Dispatcher {
    * int maximumPoolSize 最大线程数是无限大
    * long keepAliveTime,
    * TimeUnit unit, 
-   * BlockingQueue<Runnable> workQueue,
+   * SynchronousQueue<Runnable> workQueue 这个队列接收到任务的时候，会直接提交给线程处理，
+   * 而不保留它，如果所有线程都在工作怎么办？
+   * 那就新建一个线程来处理这个任务！所以为了保证不出现<线程数达到了maximumPoolSize而不能新建线程>的错误，
+   * 使用这个类型队列的时候，maximumPoolSize一般指定成Integer.MAX_VALUE，即无限大。
    * ThreadFactory threadFactory  线程工厂，创建OkHttp Dispatcher
    */
   public synchronized ExecutorService executorService() {
@@ -134,20 +139,22 @@ public final class Dispatcher {
   }
 
   /**
-   * synchronized关键字，保证方法执行完毕
+   * synchronized关键字，保证方法执行完毕。
    * @param call
    */
   synchronized void enqueue(AsyncCall call) {
     // 最大请求数量的判断。这个地方默认规定了OKHttp最大的同时请求不能超过并发数(64,可配置调度器调整)，
-    // okhttp会使用共享主机即 地址相同的会共享socket 最大请求域名是5个,同一个host最多允许5条线程通知执行请求
+    // okhttp会使用共享主机 地址相同的会共享socket 最大请求域名是5个,同一个host最多允许5条线程通知执行请求
     // 如果不满足条件，则先把请求加入准备队列中
     if (runningAsyncCalls.size() < maxRequests && runningCallsForHost(call) < maxRequestsPerHost) {
-      // 将call加入到运行的异步Call队列
+      // 将call加入到运行的异步Call队列。
+      // ArrayDeque是一个数组构成的双端队列 Add 是插入队列的尾部
       runningAsyncCalls.add(call);
       // 获取线程池，线程池执行AsyncCall
       // 我们看一下线程池的设计
       executorService().execute(call);
     } else {
+      // readyAsyncCalls也是ArrayDeque是一个数组构成的双端队列 Add 是插入队列的尾部
       readyAsyncCalls.add(call);
     }
   }
@@ -170,16 +177,25 @@ public final class Dispatcher {
     }
   }
 
+  /**
+   * 这个其实就是调度新的请求异步Call为主
+   */
   private void promoteCalls() {
+    /// 如果正在执行的请求数量已经超多最大的请求出
     if (runningAsyncCalls.size() >= maxRequests) return; // Already running max capacity.
     if (readyAsyncCalls.isEmpty()) return; // No ready calls to promote.
 
+    /// 遍历所有的ReadyCalls 这个有
     for (Iterator<AsyncCall> i = readyAsyncCalls.iterator(); i.hasNext(); ) {
+      /// 遍历一个新的异步请求，获取一个新的异步请求Call
       AsyncCall call = i.next();
-
+      /// 还需要遍历runningCallsForHost是否小于最大域名数量
       if (runningCallsForHost(call) < maxRequestsPerHost) {
+        // 既然能够放入到Runing队列中，那么就把他remove掉
         i.remove();
+        // 添加到runningAsyncCalls中
         runningAsyncCalls.add(call);
+        // 同事调度执行则这个异步请求call
         executorService().execute(call);
       }
 
@@ -203,6 +219,7 @@ public final class Dispatcher {
 
   /** Used by {@code AsyncCall#run} to signal completion. */
   void finished(AsyncCall call) {
+    // 执行runningAsyncCalls的移除操作
     finished(runningAsyncCalls, call, true);
   }
 
@@ -215,7 +232,9 @@ public final class Dispatcher {
     int runningCallsCount;
     Runnable idleCallback;
     synchronized (this) {
+      /// 所有的RunningCall执行完成Finish之后，才会移除他
       if (!calls.remove(call)) throw new AssertionError("Call wasn't in-flight!");
+      /// 重新进行新的网络请求的调度
       if (promoteCalls) promoteCalls();
       runningCallsCount = runningCallsCount();
       idleCallback = this.idleCallback;

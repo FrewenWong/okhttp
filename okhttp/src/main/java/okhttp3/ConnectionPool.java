@@ -85,6 +85,12 @@ public final class ConnectionPool {
     this(5, 5, TimeUnit.MINUTES);
   }
 
+  /**
+   * 默认最大缓存5个连接，过期时间为5分钟，存储连接是通过ConnectionPool#put()方法
+   * @param maxIdleConnections
+   * @param keepAliveDuration
+   * @param timeUnit
+   */
   public ConnectionPool(int maxIdleConnections, long keepAliveDuration, TimeUnit timeUnit) {
     this.maxIdleConnections = maxIdleConnections;
     this.keepAliveDurationNs = timeUnit.toNanos(keepAliveDuration);
@@ -127,7 +133,10 @@ public final class ConnectionPool {
     }
     return null;
   }
-
+  /**
+   * 存储连接的时候，如果没开启清理任务则开启清理过期连接任务并缓存新的连接
+   * @param connection
+   */
   void put(RealConnection connection) {
     assert (Thread.holdsLock(this));
     if (!cleanupRunning) {

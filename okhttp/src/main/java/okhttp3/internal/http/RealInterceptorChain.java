@@ -37,6 +37,15 @@ public final class RealInterceptorChain implements Interceptor.Chain {
   private final Request request;
   private int calls;
 
+  /**
+   * 通常情况下，我们会在AsyncCall的execute()的方法getResponseWithInterceptorChain来实例化这个对象
+   * @param interceptors      我们整理好的拦截器列表
+   * @param streamAllocation
+   * @param httpStream
+   * @param connection
+   * @param index           聊天的索引值
+   * @param request         原始请求
+   */
   public RealInterceptorChain(List<Interceptor> interceptors, StreamAllocation streamAllocation,
       HttpStream httpStream, Connection connection, int index, Request request) {
     this.interceptors = interceptors;
@@ -63,10 +72,22 @@ public final class RealInterceptorChain implements Interceptor.Chain {
     return request;
   }
 
+  /**
+   * 
+   */
   @Override public Response proceed(Request request) throws IOException {
     return proceed(request, streamAllocation, httpStream, connection);
   }
 
+  /**
+   * 接着我们调用RealInterceptorChain的proceed
+   * @param request   
+   * @param streamAllocation
+   * @param httpStream
+   * @param connection
+   * @return
+   * @throws IOException
+   */
   public Response proceed(Request request, StreamAllocation streamAllocation, HttpStream httpStream,
       Connection connection) throws IOException {
     if (index >= interceptors.size()) throw new AssertionError();
@@ -85,6 +106,7 @@ public final class RealInterceptorChain implements Interceptor.Chain {
           + " must call proceed() exactly once");
     }
 
+    //// 我们开始按照索引值依次进行获取对应的拦截器
     // Call the next interceptor in the chain.
     RealInterceptorChain next = new RealInterceptorChain(
         interceptors, streamAllocation, httpStream, connection, index + 1, request);

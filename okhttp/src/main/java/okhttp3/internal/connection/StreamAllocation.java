@@ -82,6 +82,11 @@ public final class StreamAllocation {
   private boolean canceled;
   private HttpStream stream;
 
+  /**
+   * 
+   * @param connectionPool  client.connectionPool()：okhttp连接池
+   * @param address   createAddress(request.url())：将url解析为Address对象
+   */
   public StreamAllocation(ConnectionPool connectionPool, Address address) {
     this.connectionPool = connectionPool;
     this.address = address;
