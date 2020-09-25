@@ -43,6 +43,11 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static okhttp3.internal.Util.closeQuietly;
 import static okhttp3.internal.Util.discard;
 
+
+/**
+ * 所有的网络请求都可以做缓存，不只是get请求或者post请求
+ * 响应结果的缓存
+ */
 /** Serves requests from the cache and writes responses to the cache. */
 public final class CacheInterceptor implements Interceptor {
   private static final ResponseBody EMPTY_BODY = new ResponseBody() {
@@ -65,7 +70,11 @@ public final class CacheInterceptor implements Interceptor {
     this.cache = cache;
   }
 
-  @Override public Response intercept(Chain chain) throws IOException {
+  /**
+   * 缓存拦截器的intercept结果
+   */
+  @Override 
+  public Response intercept(Chain chain) throws IOException {
     Response cacheCandidate = cache != null
         ? cache.get(chain.request())
         : null;

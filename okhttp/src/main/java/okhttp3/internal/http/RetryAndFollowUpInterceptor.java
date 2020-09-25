@@ -77,11 +77,20 @@ public final class RetryAndFollowUpInterceptor implements Interceptor {
    * <p>This method is safe to be called concurrently, but provides limited guarantees. If a
    * transport layer connection has been established (such as a HTTP/2 stream) that is terminated.
    * Otherwise if a socket connection is being established, that is terminated.
+   * 
+   * 马上执行一个请求逻辑的取消
+   * 
    */
   public void cancel() {
+    // 将取消的变量置为true
+    // 我们后来看看这个cancel的请求
     canceled = true;
     StreamAllocation streamAllocation = this.streamAllocation;
-    if (streamAllocation != null) streamAllocation.cancel();
+    /// 其实执行的是streamAllocation这个
+    if (streamAllocation != null){
+      // 那这个是什么操作
+      streamAllocation.cancel();
+    } 
   }
 
   public boolean isCanceled() {
@@ -104,7 +113,8 @@ public final class RetryAndFollowUpInterceptor implements Interceptor {
     return streamAllocation;
   }
 
-  @Override public Response intercept(Chain chain) throws IOException {
+  @Override 
+  public Response intercept(Chain chain) throws IOException {
     Request request = chain.request();
 
     streamAllocation = new StreamAllocation(

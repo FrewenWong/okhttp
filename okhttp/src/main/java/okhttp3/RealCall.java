@@ -94,7 +94,11 @@ final class RealCall implements Call {
     client.dispatcher().enqueue(new AsyncCall(responseCallback));
   }
 
-  @Override public void cancel() {
+  /**
+   * 我们看一下，OKhttp是怎么取消一个请求的
+   */
+  @Override 
+  public void cancel() {
     retryAndFollowUpInterceptor.cancel();
   }
 
@@ -136,7 +140,8 @@ final class RealCall implements Call {
      * 通过看execute的方法。这里就是异步任务执行的的根本方法
      * 
      */
-    @Override protected void execute() {
+    @Override 
+    protected void execute() {
       boolean signalledCallback = false;
       try {
         // 这个地方通过责任链模式，层层进行处理，最后将response返回
@@ -159,6 +164,7 @@ final class RealCall implements Call {
         }
       } finally {
         /// 重点是这个方法，当所有的网络请求执行完毕之后，都是执行client.dispatcher().finished(this)
+        /// 这里面我们可以看到等待队列是怎么维护的？？
         client.dispatcher().finished(this);
       }
     }
@@ -178,31 +184,36 @@ final class RealCall implements Call {
   }
 
   /**
-   * 这个方法是非常重要的，
+   * 这个方法是非常重要的，在线程池的子线程中来进行执行
    * 这个就是通过责任链的模式来进行我们的Response的请求
    * 
-   * TODO 这个我们需要看一下，我们这些拦截器是随便插入吗？？还是有插入顺序的
+   * TODO 这个我们需要看一下，我们这些拦截器是随便插入吗？？还是有插入顺序的。
+   * 
+   * 实际上是有插入顺序的。也就是我们自定义的拦截器是放在顺序的前部。
+   * 最终网络请求的的拦截器放在最后面
+   * 
    * @return
    * @throws IOException
    */
   private Response getResponseWithInterceptorChain() throws IOException {
     // Build a full stack of interceptors.
     List<Interceptor> interceptors = new ArrayList<>();
-    // 首先添加的是client里面我们
+    // 首先添加的是client里面我们自定义的拦截器
     interceptors.addAll(client.interceptors());
-    // 添加retryAndFollowUpInterceptor
+    // 添加retryAndFollowUpInterceptor。重试和重定向拦截器
     interceptors.add(retryAndFollowUpInterceptor);
-    // 添加BridgeInterceptor
+    // 添加BridgeInterceptor。添加请求头的配置信息（主要就是Http请求的协议内容）
     interceptors.add(new BridgeInterceptor(client.cookieJar()));
     // 添加缓存的CacheInterceptor
     interceptors.add(new CacheInterceptor(client.internalCache()));
-    // 添加连接的ConnectInterceptor
+    // 添加连接的ConnectInterceptor。Socket连接池
     interceptors.add(new ConnectInterceptor(client));
 
-    /// 添加网络拦截器
+    /// 添加网络重试和跟踪拦截器拦截器
     if (!retryAndFollowUpInterceptor.isForWebSocket()) {
       interceptors.addAll(client.networkInterceptors());
     }
+    ///请求服务器拦截器
     interceptors.add(new CallServerInterceptor(
         retryAndFollowUpInterceptor.isForWebSocket()));
 

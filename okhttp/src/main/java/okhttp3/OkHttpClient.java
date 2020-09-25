@@ -449,11 +449,16 @@ public class OkHttpClient implements Cloneable, Call.Factory {
     int writeTimeout;
 
     public Builder() {
+      // OkhttpClient的Dispatcher
       dispatcher = new Dispatcher();
+      // Http的协议版本号
       protocols = DEFAULT_PROTOCOLS;
       connectionSpecs = DEFAULT_CONNECTION_SPECS;
+      // 代理选择器
       proxySelector = ProxySelector.getDefault();
+      // 管理Cookie
       cookieJar = CookieJar.NO_COOKIES;
+      // Socket工厂
       socketFactory = SocketFactory.getDefault();
       hostnameVerifier = OkHostnameVerifier.INSTANCE;
       certificatePinner = CertificatePinner.DEFAULT;
@@ -464,6 +469,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
       followSslRedirects = true;
       followRedirects = true;
       retryOnConnectionFailure = true;
+      /// 默认的连接超时时间
       connectTimeout = 10_000;
       readTimeout = 10_000;
       writeTimeout = 10_000;

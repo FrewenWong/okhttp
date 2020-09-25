@@ -44,11 +44,21 @@ public final class BridgeInterceptor implements Interceptor {
     this.cookieJar = cookieJar;
   }
 
-  @Override public Response intercept(Chain chain) throws IOException {
+  /**
+   * 我们看一下桥接拦截器的拦截操作
+   * 从这些代码中我们就可以看到，当我们需要自定义自己的Header参数，
+   * 那么我们就模仿这里面的代码然后我们就设置的Header的相关参数
+   */
+  @Override 
+  public Response intercept(Chain chain) throws IOException {
+    /// 获取真实请求链路中的Request对象
     Request userRequest = chain.request();
+    // 从现有的request 重新实例化一个
     Request.Builder requestBuilder = userRequest.newBuilder();
 
     RequestBody body = userRequest.body();
+
+    /// 主要就是添加下面的一些请求拦截器。下面就是符合Http协议内容的
     if (body != null) {
       MediaType contentType = body.contentType();
       if (contentType != null) {
@@ -89,7 +99,7 @@ public final class BridgeInterceptor implements Interceptor {
     if (userRequest.header("User-Agent") == null) {
       requestBuilder.header("User-Agent", Version.userAgent());
     }
-
+    //// 在数据返回之前，还是会执行下一个真实拦截链路的链路链路请求
     Response networkResponse = chain.proceed(requestBuilder.build());
 
     HttpHeaders.receiveHeaders(cookieJar, userRequest.url(), networkResponse.headers());

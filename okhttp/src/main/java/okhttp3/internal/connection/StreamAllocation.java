@@ -271,14 +271,23 @@ public final class StreamAllocation {
     }
   }
 
+  /**
+   * 这个就是我们网络请求的取消
+   * 归根结底我们还是要搞清楚StreamAllocation
+   */
   public void cancel() {
+    // Http的流
     HttpStream streamToCancel;
     RealConnection connectionToCancel;
+    // 持有的是连接池的锁
+    // 
     synchronized (connectionPool) {
+      // 是否请求取消的标志变量为true
       canceled = true;
       streamToCancel = stream;
       connectionToCancel = connection;
     }
+    // 主要这两个
     if (streamToCancel != null) {
       streamToCancel.cancel();
     } else if (connectionToCancel != null) {

@@ -48,7 +48,7 @@ public final class ConnectInterceptor implements Interceptor {
     // 获取到网络请求的Request
     Request request = realChain.request();
 
-    
+    //// 这个StreamAllocation进行管理Http请求的SOcke
     StreamAllocation streamAllocation = realChain.streamAllocation();
 
     // We need the network to satisfy this request. Possibly for validating a conditional GET.

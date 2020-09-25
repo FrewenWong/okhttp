@@ -59,7 +59,9 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_PROXY_AUTH;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static okhttp3.internal.Util.closeQuietly;
-
+/**
+ * 里面的RealConecttion的真是的Connection的请求连接的管理的socket连接的管理
+ */
 public final class RealConnection extends FramedConnection.Listener implements Connection {
   private final Route route;
 
