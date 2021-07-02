@@ -17,6 +17,7 @@ package okhttp3.internal.http2;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import okhttp3.internal.http2.hpackjson.Case;
@@ -24,8 +25,8 @@ import okhttp3.internal.http2.hpackjson.HpackJsonUtil;
 import okhttp3.internal.http2.hpackjson.Story;
 import okio.Buffer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static okhttp3.internal.http2.hpackjson.Story.MISSING;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests Hpack implementation using https://github.com/http2jp/hpack-test-case/
@@ -35,42 +36,30 @@ public class HpackDecodeTestBase {
   /**
    * Reads all stories in the folders provided, asserts if no story found.
    */
-  protected static Collection<Story[]> createStories(String[] interopTests)
+  protected static List<Object> createStories(String[] interopTests)
       throws Exception {
-    List<Story[]> result = new ArrayList<>();
+    if (interopTests.length == 0) {
+      return Collections.singletonList(MISSING);
+    }
+
+    List<Object> result = new ArrayList<>();
     for (String interopTestName : interopTests) {
       List<Story> stories = HpackJsonUtil.readStories(interopTestName);
-      if (stories.isEmpty()) {
-        fail("No stories for: " + interopTestName);
-      }
       for (Story story : stories) {
-        result.add(new Story[] {story});
+        result.add(story);
       }
     }
     return result;
   }
 
   private final Buffer bytesIn = new Buffer();
-  private final Hpack.Reader hpackReader = new Hpack.Reader(4096, bytesIn);
-
-  private final Story story;
-
-  public HpackDecodeTestBase(Story story) {
-    this.story = story;
-  }
-
-  /**
-   * Expects wire to be set for all cases, and compares the decoder's output to expected headers.
-   */
-  protected void testDecoder() throws Exception {
-    testDecoder(story);
-  }
+  private final Hpack.Reader hpackReader = new Hpack.Reader(bytesIn, 4096);
 
   protected void testDecoder(Story story) throws Exception {
-    for (Case caze : story.getCases()) {
-      bytesIn.write(caze.getWire());
+    for (Case testCase : story.getCases()) {
+      bytesIn.write(testCase.getWire());
       hpackReader.readHeaders();
-      assertSetEquals(String.format("seqno=%d", caze.getSeqno()), caze.getHeaders(),
+      assertSetEquals(String.format("seqno=%d", testCase.getSeqno()), testCase.getHeaders(),
           hpackReader.getAndResetHeaderList());
     }
   }
@@ -83,10 +72,7 @@ public class HpackDecodeTestBase {
    */
   private static void assertSetEquals(
       String message, List<Header> expected, List<Header> observed) {
-    assertEquals(message, new LinkedHashSet<>(expected), new LinkedHashSet<>(observed));
-  }
-
-  protected Story getStory() {
-    return story;
+    assertThat(new LinkedHashSet<>(observed)).overridingErrorMessage(message).isEqualTo(
+        new LinkedHashSet<>(expected));
   }
 }
